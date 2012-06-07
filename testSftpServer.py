@@ -238,7 +238,10 @@ class MySFTPAdapter:
 
         @param path: the directory to open.
         """
+        from objs import Foo
         print 'Just for test openDirectory', path
+        x = Foo((('test', 'ff', 'ff'), ('foo','ff','ff'), ('bar','yy','yy')))
+        return x
 
     def getAttrs(self, path, followLinks):
         """
