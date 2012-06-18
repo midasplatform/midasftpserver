@@ -1,26 +1,14 @@
-# ckeygen -t rsa -f id_rsa
-# 
-# ssh-passwords
-# bob:password
-# foo:foo
 
 from twisted.application import service, internet
-from zope.interface import implements
+"""
+Midas SFTP Service
+"""
 from twisted.python import components
-from twisted.internet.protocol import Protocol
-from twisted.python import log, failure
 from twisted.cred.portal import Portal
-from twisted.cred.checkers import FilePasswordDB
 from twisted.conch.ssh.factory import SSHFactory
-from twisted.internet import reactor
 from twisted.conch.ssh.keys import Key
-from twisted.conch.interfaces import IConchUser
 from twisted.conch.avatar import ConchUser
-from twisted.conch.unix import UnixConchUser
 from twisted.conch.ssh import filetransfer
-from twisted.conch.ssh.session import SSHSession, SSHSessionProcessProtocol, wrapProtocol
-from twisted.cred.checkers import ICredentialsChecker
-from twisted.cred.credentials import IUsernamePassword
 
 from sftpServer import MySFTPAdapter
 from authentication import MidasRealm, DummyChecker
@@ -42,7 +30,6 @@ def makeService():
     factory.portal.registerChecker(DummyChecker())
 
     return internet.TCPServer(8022, factory)
-
 
 
 application = service.Application("midas sftp server")
