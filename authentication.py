@@ -6,10 +6,17 @@ from twisted.internet.protocol import Protocol
 from twisted.conch.interfaces import IConchUser
 from twisted.conch.avatar import ConchUser
 from twisted.conch.ssh.session import SSHSession, SSHSessionProcessProtocol, wrapProtocol
+from twisted.conch.ssh.factory import SSHFactory
+from twisted.conch.ssh.userauth import SSHUserAuthServer
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.credentials import IUsernamePassword
+from twisted.python import log
 
 from sftpServer import MyFileTransferServer
+
+from twisted.cred import portal, checkers, credentials, error
+from twisted.internet import defer
+import pydas
 
 class EchoProtocol(Protocol):
 
@@ -87,18 +94,34 @@ class SimpleSession(SSHSession):
         self.client = transport
         return True
 
-class MidasRealm(object):
+
+class MidasAvatar(ConchUser):
+    def __init__(self, avatarId):
+        self.username, self.password = avatarId
+        ConchUser.__init__(self)
+
+
+class MidasRealm:
+    implements(portal.IRealm)
 
     def requestAvatar(self, avatarId, mind, *interfaces):
-        user = ConchUser()
+        user = MidasAvatar(avatarId)
         user.channelLookup['session'] = SimpleSession
         user.subsystemLookup.update(
                 {'sftp': MyFileTransferServer})
         return IConchUser, user, nothing
 
-class DummyChecker(object):
-    credentialInterfaces = (IUsernamePassword,)
+class MidasChecker(object):
     implements(ICredentialsChecker)
+    credentialInterfaces = (IUsernamePassword,)
+    
+    def __init__(self, url):
+        self.url = url
 
     def requestAvatarId(self, credentials):
-        return credentials.username
+        try:
+            token = pydas.login(credentials.username, credentials.password, None, self.url)
+        except:
+            return defer.fail(error.LoginFailed("Wrong password"))
+        if token is not None:
+            return defer.succeed((credentials.username, credentials.password))

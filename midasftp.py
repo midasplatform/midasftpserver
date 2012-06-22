@@ -13,8 +13,7 @@ from twisted.python import log
 from twisted.internet import reactor
 
 from sftpServer import MySFTPAdapter
-from authentication import MidasRealm, DummyChecker
-
+from authentication import MidasRealm, MidasChecker
 import sys
 
 
@@ -32,7 +31,7 @@ def makeFactory():
     factory.privateKeys = {'ssh-rsa': private_key}
     factory.publicKeys = {'ssh-rsa': public_key}
     factory.portal = Portal(MidasRealm())
-    factory.portal.registerChecker(DummyChecker())
+    factory.portal.registerChecker(MidasChecker("http://localhost/midas"))
 
     return factory
 
