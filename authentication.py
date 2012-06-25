@@ -12,7 +12,7 @@ from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.credentials import IUsernamePassword
 from twisted.python import log
 
-from sftpServer import MyFileTransferServer
+from sftpServer import MidasFileTransferServer
 
 from twisted.cred import portal, checkers, credentials, error
 from twisted.internet import defer
@@ -95,20 +95,20 @@ class SimpleSession(SSHSession):
         return True
 
 
-class MidasAvatar(ConchUser):
+class MidasConchUser(ConchUser):
     def __init__(self, avatarId):
-        self.username, self.password = avatarId
         ConchUser.__init__(self)
+        self.email, self.token, self.url = avatarId
+        self.channelLookup['session'] = SSHSession
+        self.subsystemLookup.update(
+                {'sftp': MidasFileTransferServer})
 
 
 class MidasRealm:
     implements(portal.IRealm)
 
     def requestAvatar(self, avatarId, mind, *interfaces):
-        user = MidasAvatar(avatarId)
-        user.channelLookup['session'] = SimpleSession
-        user.subsystemLookup.update(
-                {'sftp': MyFileTransferServer})
+        user = MidasConchUser(avatarId)
         return IConchUser, user, nothing
 
 class MidasChecker(object):
@@ -120,8 +120,9 @@ class MidasChecker(object):
 
     def requestAvatarId(self, credentials):
         try:
-            token = pydas.login(credentials.username, credentials.password, None, self.url)
-        except:
+            token = pydas.login(email=credentials.username, password=credentials.password, url=self.url)
+        except pydas.exceptions.PydasException as detail:
+            print "Caught PydasException: ", detail
             return defer.fail(error.LoginFailed("Wrong password"))
         if token is not None:
-            return defer.succeed((credentials.username, credentials.password))
+            return defer.succeed((credentials.username, token, self.url))
