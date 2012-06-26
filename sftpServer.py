@@ -6,7 +6,11 @@ from zope.interface import implements
 from twisted.python import log, failure
 from twisted.conch.ssh import filetransfer
 
-class MySFTPAdapter:
+import pydas
+import os
+
+
+class MidasSFTPAdapter:
 
     implements(filetransfer.ISFTPServer)
     
@@ -60,6 +64,7 @@ class MySFTPAdapter:
         with the object.
         """
         print 'openFile', filename, flags, attrs
+        
 
     def removeFile(self, filename):
         """
@@ -142,10 +147,17 @@ class MySFTPAdapter:
 
         @param path: the directory to open.
         """
+        print 'openDirectory', path
+        returnTuple = ()
+        user = self.avatar.pydas.communicator.get_user_by_email(self.avatar.pydas.email)
+        #TODO: get children by path
+        children = self.avatar.pydas.communicator.folder_children(self.avatar.pydas.token, folder_id=user['privatefolder_id'])
+        for folder in children['folders']:
+            returnTuple += ((folder['name'], folder['name'], folder['folder_id']),)
+        for item in children['items']:
+            returnTuple += ((item['name'], item['name'], item['item_id']),)
         from objs import Foo
-        print 'Just for test openDirectory', path
-        x = Foo((('test', 'ff', 'ff'), ('foo','ff','ff'), ('bar','yy','yy')))
-        return x
+        return Foo(returnTuple)
 
     def getAttrs(self, path, followLinks):
         """
@@ -215,6 +227,10 @@ class MySFTPAdapter:
 
         @param path: the path to convert as a string.
         """
+        # TODO: add support for more users and communities
+        if not path.startswith('/midas/users/'):
+            user = self.avatar.pydas.communicator.get_user_by_email(self.avatar.pydas.email)
+            path = os.path.normpath('/midas/users/%s_%s/%s/Private' % (user['firstname'], user['lastname'], path))
         print 'realPath', path
         return path
 
@@ -239,7 +255,7 @@ class MySFTPAdapter:
 
 import struct
 
-class MyFileTransferServer(filetransfer.FileTransferServer):
+class MidasFileTransferServer(filetransfer.FileTransferServer):
 
     def dataReceived(self, data):
         self.buf += data

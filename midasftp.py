@@ -12,12 +12,12 @@ from twisted.conch.ssh import filetransfer
 from twisted.python import log
 from twisted.internet import reactor
 
-from sftpServer import MySFTPAdapter
-from authentication import MidasRealm, MidasChecker
+from sftpServer import MidasSFTPAdapter
+from authentication import MidasRealm, MidasChecker, MidasConchUser
 import sys
 
 
-components.registerAdapter(MySFTPAdapter, ConchUser, filetransfer.ISFTPServer)
+components.registerAdapter(MidasSFTPAdapter, MidasConchUser, filetransfer.ISFTPServer)
 
 def get_key(path):
     return Key.fromString(data=open(path).read())

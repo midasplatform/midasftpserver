@@ -98,7 +98,7 @@ class SimpleSession(SSHSession):
 class MidasConchUser(ConchUser):
     def __init__(self, avatarId):
         ConchUser.__init__(self)
-        self.email, self.token, self.url = avatarId
+        self.email, self.pydas, self.url = avatarId
         self.channelLookup['session'] = SSHSession
         self.subsystemLookup.update(
                 {'sftp': MidasFileTransferServer})
@@ -120,9 +120,8 @@ class MidasChecker(object):
 
     def requestAvatarId(self, credentials):
         try:
-            token = pydas.login(email=credentials.username, password=credentials.password, url=self.url)
+            pydas.login(email=credentials.username, password=credentials.password, application='Midasftp Server', url=self.url)
         except pydas.exceptions.PydasException as detail:
             print "Caught PydasException: ", detail
-            return defer.fail(error.LoginFailed("Wrong password"))
-        if token is not None:
-            return defer.succeed((credentials.username, token, self.url))
+            return defer.fail(error.LoginFailed("Invalid email or password"))
+        return defer.succeed((credentials.username, pydas, self.url))
